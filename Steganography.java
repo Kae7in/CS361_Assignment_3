@@ -79,6 +79,7 @@ public class Steganography {
             // to the bit we want to represent from the message.
             // This method makes the least impact on the image.
 
+            int maxPossibleBitsLeft = (pixelsInImage * 3) - ((pixelsInImage * 3) % 8) //number of possible bits we can store to make all of them result in characters
             int [] zeroBits = [0, 0, 1, 1, 0, 0, 0, 0];
             // iterate over each pixel
             while (bitsInMessageLeft > 0) {
@@ -89,6 +90,9 @@ public class Steganography {
                 int zeroBitIndex = 0;
 
                 // ***LOTS OF FREAKING CODE HERE***
+                if (maxPossibleBitsLeft > 0){
+                    
+                }
             }
 
             if (bitsInMessageLeft > 0){
@@ -110,7 +114,7 @@ public class Steganography {
                 decodedMessageFile.delete();
                 decodedMessageFile = new File(messageName);
             }
-            writer = new FileOutputStream(decodedMessageFile);
+            writer = new FileOutputStream(decodedMessageFile, true);
 
 
             int decodedChar = 0;
