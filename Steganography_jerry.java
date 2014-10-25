@@ -41,7 +41,7 @@ public class Steganography_jerry {
         long amountPixel = height * width;
         long imageNumBytes = amountPixel * 3; 
         String imageType = inputImageName.substring(inputImageName.indexOf('.') + 1);
-        // System.out.println(imageType);
+
         System.out.println("Filename: " + inputImageName);
         System.out.printf("Image width: %d\n", width);
         System.out.printf("Image height: %d\n", height);
@@ -86,7 +86,7 @@ public class Steganography_jerry {
                 int x = 0;
                 int y = 0;
                 
-                int newPixRGBPlace = 2; // was -1
+                int newPixRGBPlace = 2; // iterates through RBG
                 int messageBitsRemaining = 8;
                 int messageByte = -1;
                 int newPixel = encodedImage.getRGB(x, y);
@@ -99,9 +99,8 @@ public class Steganography_jerry {
 
                     while (messageBitsRemaining > 0) {
                         
+                        // this means we have iterated through RGB
                         if (newPixRGBPlace == -1) {
-                            // x++;
-                            // System.out.printf("About to write new pixel. newPixRGBPlace is: %d\n", newPixRGBPlace);
                             encodedImage.setRGB(x, y, newPixel);
                             newPixRGBPlace = 2;
 
@@ -110,7 +109,6 @@ public class Steganography_jerry {
                                 x = 0;
                                 y++;
                             }
-                            // System.out.printf("%h \n", newPixel);
                             newPixel = encodedImage.getRGB(x,y);
                         }
 
@@ -120,13 +118,9 @@ public class Steganography_jerry {
 
                         int currentMessageBit = (messageByte >>> shiftMsgBit) & 1;
 
-                        // System.out.printf("%d ", currentMessageBit);
-
-                        // what these do is get the image byte and change the end as necessary
-                        // then, shift the byte to it's proper position
+                        // these change the bit to 0 or 1, the position depending on newPixRBGPlace
                         if (currentMessageBit == 1) { 
                             // '|' so the one is always transfered
-                            // System.out.println("in if statement for currentMessageBit");
                             if (newPixRGBPlace == 2) {
                                 newPixel = newPixel | (0x00010000);
                             } else if (newPixRGBPlace == 1) {
@@ -134,10 +128,8 @@ public class Steganography_jerry {
                             } else if (newPixRGBPlace == 0) {
                                 newPixel = newPixel | (0x00000001);
                             }
-                            // newPixel = newPixel | ((imageByte | 1) << (newPixRGBPlace * 8));
                         } else {
-                            // if 0, '&'' it with 11111110
-                            // System.out.println("in if statement for currentMessageBit");
+                            // transfer all bits but always transfer a 0 depending on newPixRGBPlace
                             if (newPixRGBPlace == 2) {
                                 newPixel = newPixel & (0xFFFEFFFF);
                             } else if (newPixRGBPlace == 1) {
@@ -146,10 +138,8 @@ public class Steganography_jerry {
                                 newPixel = newPixel & (0xFFFFFFFE);
                             }
 
-                            // newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
                         }
 
-                        // System.out.printf("%h ", newPixel);
                         messageBitsRemaining--;
                         shiftMsgBit--;
                         newPixRGBPlace--;
@@ -164,13 +154,11 @@ public class Steganography_jerry {
 
                 // if 1, need to write 2 0's. this leaves 2 pixels for 0's
                 if (newPixRGBPlace == 1) {
-                    // newPixel = newPixel | (imagePixel & 0xFEFE);
                     newPixel = newPixel & (0xFFFFFEFE);
                     limit = 2;
                 } else if (newPixRGBPlace == 0){
                     // if 0, can only write 1 zero in the current pixel.
                     // set limit to 3 since we need 3 bytes to write 7 zeroes
-                    // newPixel = newPixel | (imagePixel & 0xFE);
                     newPixel = newPixel & (0xFFFFFFFE);
                     limit = 3;
                 } else {// if (newPixRGBPlace == -1) {
@@ -188,8 +176,7 @@ public class Steganography_jerry {
                 // since the encoded message was originally a copy of the input image,
                 //  we don't need to copy over the other pixels.
                 for (int i = 0; i < limit; i++) {
-                    
-                    // newPixel = img.getRGB(x, y) & (0xFFFEFEFE);
+
                     newPixel = encodedImage.getRGB(x, y) & (0xFFFEFEFE);
                     encodedImage.setRGB(x, y, newPixel);
                     x++;
@@ -198,10 +185,6 @@ public class Steganography_jerry {
                         y++;
                     }
                 }
-
-
-                // System.out.println("Message was small enough.");
-
             
             } else {
 
@@ -216,7 +199,7 @@ public class Steganography_jerry {
                 int x = 0;
                 int y = 0;
                 
-                int newPixRGBPlace = 2; // was -1
+                int newPixRGBPlace = 2; // iterates through RBG
                 int messageBitsRemaining = 8;
                 int messageByte = -1;
                 int newPixel = encodedImage.getRGB(x, y);
@@ -239,9 +222,8 @@ public class Steganography_jerry {
 
                     while (messageBitsRemaining > 0) {
                         
+                        // this means we have iterated through RGB
                         if (newPixRGBPlace == -1) {
-                            // x++;
-                            // System.out.printf("About to write new pixel. newPixRGBPlace is: %d\n", newPixRGBPlace);
                             encodedImage.setRGB(x, y, newPixel);
                             newPixRGBPlace = 2;
 
@@ -250,7 +232,7 @@ public class Steganography_jerry {
                                 x = 0;
                                 y++;
                             }
-                            // System.out.printf("%h \n", newPixel);
+
                             newPixel = encodedImage.getRGB(x,y);
                         }
 
@@ -260,13 +242,9 @@ public class Steganography_jerry {
 
                         int currentMessageBit = (messageByte >>> shiftMsgBit) & 1;
 
-                        // System.out.printf("%d ", currentMessageBit);
-
-                        // what these do is get the image byte and change the end as necessary
-                        // then, shift the byte to it's proper position
+                        // these change the bit to 0 or 1, the position depending on newPixRBGPlace
                         if (currentMessageBit == 1) { 
                             // '|' so the one is always transfered
-                            // System.out.println("in if statement for currentMessageBit");
                             if (newPixRGBPlace == 2) {
                                 newPixel = newPixel | (0x00010000);
                             } else if (newPixRGBPlace == 1) {
@@ -274,10 +252,8 @@ public class Steganography_jerry {
                             } else if (newPixRGBPlace == 0) {
                                 newPixel = newPixel | (0x00000001);
                             }
-                            // newPixel = newPixel | ((imageByte | 1) << (newPixRGBPlace * 8));
                         } else {
-                            // if 0, '&'' it with 11111110
-                            // System.out.println("in if statement for currentMessageBit");
+                            // transfer all bits but always transfer a 0 depending on newPixRGBPlace
                             if (newPixRGBPlace == 2) {
                                 newPixel = newPixel & (0xFFFEFFFF);
                             } else if (newPixRGBPlace == 1) {
@@ -285,11 +261,8 @@ public class Steganography_jerry {
                             } else if (newPixRGBPlace == 0) {
                                 newPixel = newPixel & (0xFFFFFFFE);
                             }
-
-                            // newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
                         }
 
-                        // System.out.printf("%h ", newPixel);
                         messageBitsRemaining--;
                         shiftMsgBit--;
                         newPixRGBPlace--;
@@ -305,13 +278,13 @@ public class Steganography_jerry {
 
                 // if 1, need to write 2 0's. this leaves 2 pixels for 0's
                 if (newPixRGBPlace == 1) {
-                    // newPixel = newPixel | (imagePixel & 0xFEFE);
+
                     newPixel = newPixel & (0xFFFFFEFE);
                     limit = 2;
                 } else if (newPixRGBPlace == 0){
                     // if 0, can only write 1 zero in the current pixel.
                     // set limit to 3 since we need 3 bytes to write 7 zeroes
-                    // newPixel = newPixel | (imagePixel & 0xFE);
+
                     newPixel = newPixel & (0xFFFFFFFE);
                     limit = 3;
                 } else {// if (newPixRGBPlace == -1) {
@@ -360,38 +333,37 @@ public class Steganography_jerry {
 
 
             int decodedChar = 0;
-            int bitShift = 7;
+            int bitShift = 7; // how many to shift over to build the byte
             int imagePixel;
             int temp;
+
+            // iterate through all pixels
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
 
                     imagePixel = img.getRGB(x, y);
 
+                    // iterate through RGB
                     for (int i = 2; i > -1; i--) {
                         if (bitShift == -1) {
+
                             decodedChar = decodedChar & 0xFF;
                             if (decodedChar == 0) {
-                                // break out of the loop
-                                // writer.write('0');
+                                // if found, we are done
                                 writer.close();
                                 return;
                             }
 
                             writer.write(decodedChar);
-                            // System.out.printf("%d ", decodedChar);
-                            // System.out.printf("%c ", decodedChar);
                             bitShift = 7;
                             decodedChar = 0;
                         }
                         
-                        // decodedChar = decodedChar | (((imagePixel >> (i * 8)) & 1) << bitShift);
                         if (i == 2) {
                             temp = imagePixel & 0x00010000;
                             temp = temp >> 16;
                             temp = temp & 1;
                             decodedChar = decodedChar | (temp << bitShift);
-
                         } else if (i == 1) {
                             temp = imagePixel & 0x00000100;
                             temp = temp >> 8;
