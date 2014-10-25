@@ -79,6 +79,7 @@ public class Steganography {
             // to the bit we want to represent from the message.
             // This method makes the least impact on the image.
 
+<<<<<<< HEAD
             // iterate over each pixel
             for (int i = 0; i < x; i++){
                 for (int j = 0; j < y; j++){
@@ -101,6 +102,7 @@ public class Steganography {
                             ++channelsOfPixelEncoded;
                         }
 
+<<<<<<< HEAD
                         // Write out the zero byte to the blue channel of the last pixel.
                         int pixel = pixel & 0xFFFFFF00;
                         img.setRGB(i, j, pixel);
@@ -176,6 +178,7 @@ public class Steganography {
                             bitShift = 7;
                             decodedChar = 0;
                         }
+                        
                         decodedChar = decodedChar | (((imagePixel >> (i * 8)) & 1) << bitShift);
                         
                         bitShift--;
