@@ -6,7 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 
-public class Steganography {
+public class Steganography_jerry {
     public static void main(String[] args) throws Exception {
 
         // flag input
@@ -101,7 +101,7 @@ public class Steganography {
                         
                         if (newPixRGBPlace == -1) {
                             // x++;
-                            
+                            System.out.printf("About to write new pixel. newPixRGBPlace is: %d\n", newPixRGBPlace);
                             encodedImage.setRGB(x, y, newPixel);
                             newPixRGBPlace = 2;
 
@@ -110,6 +110,7 @@ public class Steganography {
                                 x = 0;
                                 y++;
                             }
+                            System.out.printf("%h ", newPixel);
                             newPixel = encodedImage.getRGB(x,y);
                         }
 
@@ -125,6 +126,7 @@ public class Steganography {
                         // then, shift the byte to it's proper position
                         if (currentMessageBit == 1) { 
                             // '|' so the one is always transfered
+                            System.out.println("in if statement for currentMessageBit");
                             if (newPixRGBPlace == 2) {
                                 newPixel = newPixel | (0x00010000);
                             } else if (newPixRGBPlace == 1) {
@@ -146,7 +148,7 @@ public class Steganography {
                             // newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
                         }
 
-                        System.out.printf("%h ", newPixel);
+                        // System.out.printf("%h ", newPixel);
                         messageBitsRemaining--;
                         shiftMsgBit--;
                         newPixRGBPlace--;
@@ -325,7 +327,7 @@ public class Steganography {
                 decodedMessageFile.delete();
                 decodedMessageFile = new File(messageName);
             }
-            writer = new FileOutputStream(decodedMessageFile);
+            writer = new FileOutputStream(decodedMessageFile, true);
 
 
             int decodedChar = 0;
