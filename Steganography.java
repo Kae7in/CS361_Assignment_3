@@ -102,6 +102,8 @@ public class Steganography {
                             encodedImage.setRGB(x, y, newPixel);
                             newPixel = 0xFF000000 & imagePixel; // to get only the alpha
                             newPixRGBPlace = 2;
+                            imagePixel = img.getRGB(x, y);
+                            imageRGBPlace = 2;
                             x++;
                         }
 
@@ -111,10 +113,10 @@ public class Steganography {
 
                         // this should actually be the same as newPixRGBPlace
                         // (they move together) but i'm keeping it for now for clarity
-                        if (imageRGBPlace == -1) {
-                            imagePixel = img.getRGB(x, y);
-                            imageRGBPlace = 2;
-                        }
+                        // if (imageRGBPlace == -1) {
+                        //     imagePixel = img.getRGB(x, y);
+                        //     imageRGBPlace = 2;
+                        // }
 
                         int currentMessageBit = messageByte >>> shiftMsgBit;
                         int imageByte = (imagePixel >>> imageRGBPlace) & 0xFF;
@@ -217,6 +219,8 @@ public class Steganography {
                             encodedImage.setRGB(x, y, newPixel);
                             newPixel = 0xFF000000 & imagePixel; // to get only the alpha
                             newPixRGBPlace = 2;
+                            imagePixel = img.getRGB(x, y);
+                            imageRGBPlace = 2;
                             x++;
                         }
 
@@ -226,10 +230,10 @@ public class Steganography {
 
                         // this should actually be the same as newPixRGBPlace
                         // (they move together) but i'm keeping it for now for clarity
-                        if (imageRGBPlace == -1) {
-                            imagePixel = img.getRGB(x, y);
-                            imageRGBPlace = 2;
-                        }
+                        // if (imageRGBPlace == -1) {
+                        //     imagePixel = img.getRGB(x, y);
+                        //     imageRGBPlace = 2;
+                        // }
 
                         int currentMessageBit = messageByte >>> shiftMsgBit;
                         int imageByte = (imagePixel >>> imageRGBPlace) & 0xFF;
