@@ -38,14 +38,14 @@ public class Steganography {
         int width = img.getWidth();
 
         // 3 bytes for each pixel
-        long amountPixel = height * width;
-        long imageNumBytes = amountPixel * 3; 
+        long pixelsInImage = height * width;
+        long bytesInImage = pixelsInImage * 3; //this excludes alpha channel bytes 
         String imageType = inputImageName.substring(inputImageName.indexOf('.') + 1);
 
         System.out.println("Filename: " + inputImageName);
         System.out.printf("Image width: %d\n", width);
         System.out.printf("Image height: %d\n", height);
-        System.out.printf("Number of pixels in file: %d\n", imageNumBytes);
+        System.out.printf("Number of pixels in file: %d\n", bytesInImage);
 
         if (encode){
             
@@ -71,226 +71,70 @@ public class Steganography {
             File encodedImageFile = new File(encodedImageName);
             BufferedImage encodedImage = ImageIO.read(encodedImageFile);
 
-            long messageNumBits = messageToEncode.length() * 8;
+            long bitsInMessageLeft = messageToEncode.length() * 8;
 
 
             // Now it's time to encode the message.
-            // We change the last bit of every image byte 
-            //  to the bit we want to represent from the message
+            // We change the last bit of every image channel
+            // to the bit we want to represent from the message.
             // This method makes the least impact on the image.
 
-            if (imageNumBytes >= messageNumBits + 8) {
-                // there is room for the whole message plus 
-                //  a 0 byte to represent the end of the message
+            // iterate over each pixel
+            for (int i = 0; i < x; i++){
+                for (int j = 0; j < y; j++){
+                    int pixel = img.getRGB(i, j);
+                    int channelsOfPixelEncoded = 0; // useful when storing zero byte
 
-                int x = 0;
-                int y = 0;
-                int newPixel = 0;
-                int imageRGBPlace = 2; // was -1
-                int newPixRGBPlace = 2; // was -1
-                int messageBitsRemaining = 8;
-                int messageByte = -1;
-                int imagePixel = 0;
-                int shiftMsgBit = -1;
-                while (messageStream.available() > 0) {
-                    messageBitsRemaining = 8;
-                    messageByte = messageStream.read();
-
-                    while (messageBitsRemaining > 0) {
-                        
-                        if (newPixRGBPlace == -1) {
-                            if (x >= width) {
-                                x = 0;
-                                y++;
-                            }
-                            encodedImage.setRGB(x, y, newPixel);
-                            newPixel = 0xFF000000 & imagePixel; // to get only the alpha
-                            newPixRGBPlace = 2;
-                            imagePixel = img.getRGB(x, y);
-                            imageRGBPlace = 2;
-                            x++;
+                    // if we're on the last pixel
+                    if (i == x && j == y){
+                        if (bitsInMessageLeft > 0){
+                            // Store next bit in red channel of current pixel.
+                            // ***code here***
+                            --bitsInMessageLeft;
+                            ++channelsOfPixelEncoded;
                         }
 
-                        if (shiftMsgBit == -1) {
-                            shiftMsgBit = 7;
+                        if (bitsInMessageLeft > 0){
+                            // Store next bit in green channel of current pixel.
+                            // ***code here***
+                            --bitsInMessageLeft;
+                            ++channelsOfPixelEncoded;
                         }
 
-                        // this should actually be the same as newPixRGBPlace
-                        // (they move together) but i'm keeping it for now for clarity
-                        // if (imageRGBPlace == -1) {
-                        //     imagePixel = img.getRGB(x, y);
-                        //     imageRGBPlace = 2;
-                        // }
-
-                        int currentMessageBit = (messageByte >>> shiftMsgBit) & 1;
-                        int imageByte = (imagePixel >>> (imageRGBPlace * 8)) & 0xFF;
-
-                        // what these do is get the image byte and change the end as necessary
-                        // then, shift the byte to it's proper position
-                        if (currentMessageBit == 1) { 
-                            // '|' so the one is always transfered
-                            newPixel = newPixel | ((imageByte | 1) << (newPixRGBPlace * 8));
-                        } else {
-                            // if 0, '&'' it with 11111110
-                            newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
-                        }
-                        messageBitsRemaining--;
-                        shiftMsgBit--;
-                        newPixRGBPlace--;
-                        imageRGBPlace--;
+                        // Write out the zero byte to the blue channel of the last pixel.
+                        int pixel = pixel & 0xFFFFFF00;
+                        img.setRGB(i, j, pixel);
+                    }else if (bitsInMessageLeft > 0){
+                        // We still have bits left to write and still have room left to write them.
+                        // ***code here***
+                        // Be sure to decrement bitsInMessageLeft appropriately.
+                        // Be sure to increment channelsOfPixelEncoded appropriately.
                     }
-                }
 
-
-                // write the 0 byte in
-
-                // this limit denotes the limit of pixels to write to
-                int limit;
-
-                // if 1, need to write 2 0's. this leaves 2 pixels for 0's
-                if (newPixRGBPlace == 1) {
-                    newPixel = newPixel | (imagePixel & 0xFEFE);
-                    limit = 2;
-                } else {
-                    // if 0, can only write 1 zero in the current pixel.
-                    // set limit to 3 since we need 3 bytes to write 7 zeroes
-                    newPixel = newPixel | (imagePixel & 0xFE);
-                    limit = 3;
-                }
-
-                if (x >= width) {
-                    x = 0;
-                    y++;
-                }
-                encodedImage.setRGB(x, y, newPixel);
-                x++;
-
-                // since the encoded message was originally a copy of the input image,
-                //  we don't need to copy over the other pixels.
-                for (int i = 0; i < limit; i++) {
-                    if (x >= width) {
-                        x = 0;
-                        y++;
-                    }
-                    newPixel = img.getRGB(x, y) & (0xFFFEFEFE);
-                    encodedImage.setRGB(x, y, newPixel);
-                    x++;
-                }
-                // System.out.println("Message was small enough.");
-
-            
-            } else {
-
-                // else the message is too big to fit into the image
-                // so we fit as much as we can
-                if (imageNumBytes < 6) {
-                    System.out.println("Picture too small to encode a single character + a zero byte");
-                    return;
-                }
-
-
-                int x = 0;
-                int y = 0;
-                int newPixel = 0;
-                int imageRGBPlace = -1;
-                int newPixRGBPlace = -1;
-                int messageBitsRemaining = 8;
-                int messageByte = -1;
-                int imagePixel = 0;
-                int shiftMsgBit = -1;
-
-                // leave room for 0 byte
-                long limitOfBytes = imageNumBytes - 8;
-
-                // need to do this so that a partial byte is not written in 
-                // (a case is if we have 6 pixels, which is 18 bytes. That leaves 8 bits
-                // for a character and 8 for a zero, which leaves 2 free bits. Those 2 bits
-                // will screw everything up since it's not a full character.)
-                while (limitOfBytes % 8 != 0) {
-                    limitOfBytes--;
-                }
-
-                while (limitOfBytes > 0) {
-                    messageBitsRemaining = 8;
-                    messageByte = messageStream.read();
-
-                    while (messageBitsRemaining > 0 && limitOfBytes > 0) {
-                        
-                        if (newPixRGBPlace == -1) {
-                            if (x >= width) {
-                                x = 0;
-                                y++;
-                            }
-                            encodedImage.setRGB(x, y, newPixel);
-                            newPixel = 0xFF000000 & imagePixel; // to get only the alpha
-                            newPixRGBPlace = 2;
-                            imagePixel = img.getRGB(x, y);
-                            imageRGBPlace = 2;
-                            x++;
+                    // If the entire message was successfully written.
+                    if (bitsInMessageLeft == 0){
+                        // Store ending 0 byte in next channel to indicate end.
+                        if (channelsOfPixelEncoded == 0){
+                            pixel = pixel & 0xFF00FFFF; // Store zero byte in red channel.
+                            img.setRGB(i, j, pixel);
+                        } else if (channelsOfPixelEncoded == 1){
+                            pixel = pixel & 0xFFFF00FF; // Store zero byte in green channel.
+                            img.setRGB(i, j, pixel);
+                        } else if (channelsOfPixelEncoded == 2){
+                            pixel = pixel & 0xFFFFFF00; // Store zero byte in blue channel.
+                            img.setRGB(i, j, pixel);
                         }
-
-                        if (shiftMsgBit == -1) {
-                            shiftMsgBit = 7;
-                        }
-
-                        // this should actually be the same as newPixRGBPlace
-                        // (they move together) but i'm keeping it for now for clarity
-                        // if (imageRGBPlace == -1) {
-                        //     imagePixel = img.getRGB(x, y);
-                        //     imageRGBPlace = 2;
-                        // }
-
-                        int currentMessageBit = messageByte >>> shiftMsgBit;
-                        int imageByte = (imagePixel >>> imageRGBPlace) & 0xFF;
-
-                        // what these do is get the image byte and change the end as necessary
-                        // then, shift the byte to it's proper position
-                        if (currentMessageBit == 1) { 
-                            // '|' so the one is always transfered
-                            newPixel = newPixel | ((imageByte | 1) << (newPixRGBPlace * 8));
-                        } else {
-                            // if 0, '&'' it with 11111110
-                            newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
-                        }
-                        messageBitsRemaining--;
-                        shiftMsgBit--;
-                        newPixRGBPlace--;
-                        imageRGBPlace--;
-                        limitOfBytes--;
+                        System.out.println("Message successfully encoded in image.");
                     }
-                }
 
-                int limit;
-                if (newPixRGBPlace == 1) {
-                    newPixel = newPixel | (imagePixel & 0xFEFE);
-                    limit = 2;
-                } else {
-                    // if 0, can only write 1 zero in the current pixel.
-                    // set limit to 3 since we need 3 bytes to write 7 zeroes
-                    newPixel = newPixel | (imagePixel & 0xFE);
-                    limit = 3;
+                    channelsOfPixelEncoded = 0; // Reset this value every iteration.
                 }
+            }
 
-                if (x >= width) {
-                    x = 0;
-                    y++;
-                }
-                encodedImage.setRGB(x, y, newPixel);
-                x++;
-
-                // since the encoded message was originally a copy of the input image,
-                //  we don't need to copy over the other pixels.
-                for (int i = 0; i < limit; i++) {
-                    if (x >= width) {
-                        x = 0;
-                        y++;
-                    }
-                    newPixel = img.getRGB(x, y) & (0xFFFEFEFE);
-                    encodedImage.setRGB(x, y, newPixel);
-                    x++;
-                }
-                System.out.println("Message too large for picture. Message was partially encoded.");
-
+            if (bitsInMessageLeft > 0){
+                System.out.println("Not enough pixels to store message."
+                System.out.println("Bits left to write: " + bitsInMessageLeft);
+                System.out.println("Message truncated.");
             }
             
             messageStream.close();
