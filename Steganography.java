@@ -79,55 +79,19 @@ public class Steganography {
             // to the bit we want to represent from the message.
             // This method makes the least impact on the image.
 
+            int maxPossibleBitsLeft = (pixelsInImage * 3) - ((pixelsInImage * 3) % 8) //number of possible bits we can store to make all of them result in characters
+            int [] zeroBits = [0, 0, 1, 1, 0, 0, 0, 0];
             // iterate over each pixel
-            for (int i = 0; i < x; i++){
-                for (int j = 0; j < y; j++){
-                    int pixel = img.getRGB(i, j);
-                    int channelsOfPixelEncoded = 0; // useful when storing zero byte
+            while (bitsInMessageLeft > 0) {
+                int messageByte1 = messageStream.read();
+                int messageByte2 = messageStream.read();
+                int asciiCharacter = ((messageByte1 << 8) | messageByte2);
+                int pixel = img.getRGB(i, j);
+                int zeroBitIndex = 0;
 
-                    // if we're on the last pixel
-                    if (i == x && j == y){
-                        if (bitsInMessageLeft > 0){
-                            // Store next bit in red channel of current pixel.
-                            // ***code here***
-                            --bitsInMessageLeft;
-                            ++channelsOfPixelEncoded;
-                        }
-
-                        if (bitsInMessageLeft > 0){
-                            // Store next bit in green channel of current pixel.
-                            // ***code here***
-                            --bitsInMessageLeft;
-                            ++channelsOfPixelEncoded;
-                        }
-
-                        // Write out the zero byte to the blue channel of the last pixel.
-                        int pixel = pixel & 0xFFFFFF00;
-                        img.setRGB(i, j, pixel);
-                    }else if (bitsInMessageLeft > 0){
-                        // We still have bits left to write and still have room left to write them.
-                        // ***code here***
-                        // Be sure to decrement bitsInMessageLeft appropriately.
-                        // Be sure to increment channelsOfPixelEncoded appropriately.
-                    }
-
-                    // If the entire message was successfully written.
-                    if (bitsInMessageLeft == 0){
-                        // Store ending 0 byte in next channel to indicate end.
-                        if (channelsOfPixelEncoded == 0){
-                            pixel = pixel & 0xFF00FFFF; // Store zero byte in red channel.
-                            img.setRGB(i, j, pixel);
-                        } else if (channelsOfPixelEncoded == 1){
-                            pixel = pixel & 0xFFFF00FF; // Store zero byte in green channel.
-                            img.setRGB(i, j, pixel);
-                        } else if (channelsOfPixelEncoded == 2){
-                            pixel = pixel & 0xFFFFFF00; // Store zero byte in blue channel.
-                            img.setRGB(i, j, pixel);
-                        }
-                        System.out.println("Message successfully encoded in image.");
-                    }
-
-                    channelsOfPixelEncoded = 0; // Reset this value every iteration.
+                // ***LOTS OF FREAKING CODE HERE***
+                if (maxPossibleBitsLeft > 0){
+                    
                 }
             }
 
@@ -150,7 +114,7 @@ public class Steganography {
                 decodedMessageFile.delete();
                 decodedMessageFile = new File(messageName);
             }
-            writer = new FileOutputStream(decodedMessageFile);
+            writer = new FileOutputStream(decodedMessageFile, true);
 
 
             int decodedChar = 0;
