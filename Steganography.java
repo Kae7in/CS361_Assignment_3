@@ -42,6 +42,10 @@ public class Steganography {
         long imageNumBytes = amountPixel * 3; 
         String imageType = inputImageName.substring(inputImageName.indexOf('.') + 1);
 
+        System.out.println("Filename: " + inputImageName);
+        System.out.printf("Image width: %d\n", width);
+        System.out.printf("Image height: %d\n", height);
+        System.out.printf("Number of pixels in file: %d\n", imageNumBytes);
 
         if (encode){
             
@@ -82,8 +86,8 @@ public class Steganography {
                 int x = 0;
                 int y = 0;
                 int newPixel = 0;
-                int imageRGBPlace = -1;
-                int newPixRGBPlace = -1;
+                int imageRGBPlace = 2; // was -1
+                int newPixRGBPlace = 2; // was -1
                 int messageBitsRemaining = 8;
                 int messageByte = -1;
                 int imagePixel = 0;
@@ -118,8 +122,8 @@ public class Steganography {
                         //     imageRGBPlace = 2;
                         // }
 
-                        int currentMessageBit = messageByte >>> shiftMsgBit;
-                        int imageByte = (imagePixel >>> imageRGBPlace) & 0xFF;
+                        int currentMessageBit = (messageByte >>> shiftMsgBit) & 1;
+                        int imageByte = (imagePixel >>> (imageRGBPlace * 8)) & 0xFF;
 
                         // what these do is get the image byte and change the end as necessary
                         // then, shift the byte to it's proper position
@@ -172,7 +176,8 @@ public class Steganography {
                     encodedImage.setRGB(x, y, newPixel);
                     x++;
                 }
-                System.out.println("Message was small enough.");
+                // System.out.println("Message was small enough.");
+
             
             } else {
 
@@ -284,29 +289,55 @@ public class Steganography {
                     encodedImage.setRGB(x, y, newPixel);
                     x++;
                 }
-                System.out.println("Message is biiiig.");
+                System.out.println("Message too large for picture. Message was partially encoded.");
 
             }
             
             messageStream.close();
 
-        } else if (decode){
+        } else if (decode) {
             File decodedMessageFile = null;
             //decode dis ish
 
             // check if output message file already exist
-            FileWriter writer = null;
+            FileOutputStream writer = null;
             decodedMessageFile = new File(messageName);
             if (decodedMessageFile.exists()){
                 decodedMessageFile.delete();
                 decodedMessageFile = new File(messageName);
             }
-            writer = new FileWriter(decodedMessageFile);
+            writer = new FileOutputStream(decodedMessageFile);
+
+
+            int decodedChar = 0;
+            int bitShift = 7;
+            int imagePixel;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+
+                    imagePixel = img.getRGB(x, y);
+
+                    for (int i = 2; i > -1; i--) {
+                        if (bitShift == -1) {
+                            
+                            if (decodedChar == 0) {
+                                // break out of the loop
+                                writer.close();
+                                return;
+                            }
+
+                            writer.write(decodedChar);
+                            System.out.printf("%d ", decodedChar);
+                            System.out.printf("%c ", decodedChar);
+                            bitShift = 7;
+                            decodedChar = 0;
+                        }
+                        decodedChar = decodedChar | (((imagePixel >> (i * 8)) & 1) << bitShift);
+                        
+                        bitShift--;
+                    } 
+                }
+            }
         }
-
-
-    // This prints the image height and width and a specific pixel. 
-        System.out.println(height  + "  " +  width);
-
     }
 }
