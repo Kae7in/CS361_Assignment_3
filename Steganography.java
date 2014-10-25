@@ -25,37 +25,24 @@ public class Steganography {
         inputImageName = args[1];
         messageName = args[2];
 
-        // image input
-        File imageFile = new File(inputImageName);
-        FileInputStream inputStream;
-
-        if (imageFile.exists()) {
-            inputStream = new FileInputStream(imageFile);
-        } else {
-            System.out.println("Image file (first file given) not found.");
-            return;
-        }
 
         // get stats on the image 
         BufferedImage img = null;
         try {
             img = ImageIO.read(new File(inputImageName));
         } catch (IOException e) {
-            System.out.println("Image not found in try/catch. Should not be here.");
+            System.out.println("Image given was not found (first argument).");
             return;
         }
         int height = img.getHeight();
         int width = img.getWidth();
 
         // 3 bytes for each pixel
-        // TODO: for the sample picture, this number is 54 bytes short.
         long amountPixel = height * width;
         long imageNumBytes = amountPixel * 3; 
+        String imageType = inputImageName.substring(inputImageName.indexOf('.') + 1);
 
 
-        // TODO: all of the available() methods are pretty pricey, even worse in a loop.
-        // BUT, what if available space is great than an int can store? Maybe have a variable
-        // limit = stream.available() and update it every 1000 loops or something and manually decrement it
         if (encode){
             
             // create a FileInputStream for the message we want to encode
@@ -73,67 +60,115 @@ public class Steganography {
             sb.insert(sb.length() - 4, "-steg");
             String encodedImageName = sb.toString();
 
-            // check if output image file already exist, delete it if it does exist
-            File encodedImage = new File(encodedImageName);
-            if (encodedImage.exists()){
-                encodedImage.delete();
-                encodedImage = new File(encodedImageName);
-            }
+            // this creates a copy of the input message with the encoded name 
+            // as the name.
+            ImageIO.write(img, imageType, new File(encodedImageName));
 
-            FileOutputStream writer = new FileOutputStream(encodedImage);
+            File encodedImageFile = new File(encodedImageName);
+            BufferedImage encodedImage = ImageIO.read(encodedImageFile);
 
-            long messageNumBytes = messageToEncode.length();
+            long messageNumBits = messageToEncode.length() * 8;
 
-
-            // TODO: does he want us to replace a whole byte with '0' (uses one image pixel)
-            // or does he want us to encode it like the message? (this uses 8 image pixels)
-
-            // TODO: are we supposed to use getRBG? When you use that,
-            //  the alpha part of the pixel starts mattering
 
             // Now it's time to encode the message.
             // We change the last bit of every image byte 
             //  to the bit we want to represent from the message
             // This method makes the least impact on the image.
 
-            // TODO: the condition is + 1, assuming writing a whole byte as 0
-            if (imageNumBytes >= messageNumBytes + 1) {
+            if (imageNumBytes >= messageNumBits + 8) {
                 // there is room for the whole message plus 
                 //  a 0 byte to represent the end of the message
 
+                int x = 0;
+                int y = 0;
+                int newPixel = 0;
+                int imageRGBPlace = -1;
+                int newPixRGBPlace = -1;
+                int messageBitsRemaining = 8;
+                int messageByte = -1;
+                int imagePixel = 0;
+                int shiftMsgBit = -1;
                 while (messageStream.available() > 0) {
-                    int messageByte = messageStream.read();
+                    messageBitsRemaining = 8;
+                    messageByte = messageStream.read();
 
-                    for (int i = 7; i > -1; i--) {
-                        int messageBit = messageByte >>> i;
-                        int imageByte = inputStream.read();
+                    while (messageBitsRemaining > 0) {
+                        
+                        if (newPixRGBPlace == -1) {
+                            if (x >= width) {
+                                x = 0;
+                                y++;
+                            }
+                            encodedImage.setRGB(x, y, newPixel);
+                            newPixel = 0xFF000000 & imagePixel; // to get only the alpha
+                            newPixRGBPlace = 2;
+                            x++;
+                        }
 
-                        if (messageBit == 1) { 
+                        if (shiftMsgBit == -1) {
+                            shiftMsgBit = 7;
+                        }
+
+                        // this should actually be the same as newPixRGBPlace
+                        // (they move together) but i'm keeping it for now for clarity
+                        if (imageRGBPlace == -1) {
+                            imagePixel = img.getRGB(x, y);
+                            imageRGBPlace = 2;
+                        }
+
+                        int currentMessageBit = messageByte >>> shiftMsgBit;
+                        int imageByte = (imagePixel >>> imageRGBPlace) & 0xFF;
+
+                        // what these do is get the image byte and change the end as necessary
+                        // then, shift the byte to it's proper position
+                        if (currentMessageBit == 1) { 
                             // '|' so the one is always transfered
-                            writer.write(imageByte | 1);
-                            System.out.println( imageByte | 1);
+                            newPixel = newPixel | ((imageByte | 1) << (newPixRGBPlace * 8));
                         } else {
                             // if 0, '&'' it with 11111110
-                            writer.write( imageByte & 0xFE);
-                            System.out.println(imageByte & 0xFE);
+                            newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
                         }
-                        
+                        messageBitsRemaining--;
+                        shiftMsgBit--;
+                        newPixRGBPlace--;
+                        imageRGBPlace--;
                     }
                 }
 
-                // TODO: assuming we just write a whole byte as 0
-                // writer.write(0);
 
-                for (int i = 0; i < 8; i++) {
-                    int imageByte = inputStream.read();
-                    writer.write( imageByte & 0xFE);
+                // write the 0 byte in
+
+                // this limit denotes the limit of pixels to write to
+                int limit;
+
+                // if 1, need to write 2 0's. this leaves 2 pixels for 0's
+                if (newPixRGBPlace == 1) {
+                    newPixel = newPixel | (imagePixel & 0xFEFE);
+                    limit = 2;
+                } else {
+                    // if 0, can only write 1 zero in the current pixel.
+                    // set limit to 3 since we need 3 bytes to write 7 zeroes
+                    newPixel = newPixel | (imagePixel & 0xFE);
+                    limit = 3;
                 }
-                // to skip over the replaced byte
-                // inputStream.read();
 
-                // write the rest of the bytes into the new image
-                while (inputStream.available() > 0) {
-                    writer.write(inputStream.read());
+                if (x >= width) {
+                    x = 0;
+                    y++;
+                }
+                encodedImage.setRGB(x, y, newPixel);
+                x++;
+
+                // since the encoded message was originally a copy of the input image,
+                //  we don't need to copy over the other pixels.
+                for (int i = 0; i < limit; i++) {
+                    if (x >= width) {
+                        x = 0;
+                        y++;
+                    }
+                    newPixel = img.getRGB(x, y) & (0xFFFEFEFE);
+                    encodedImage.setRGB(x, y, newPixel);
+                    x++;
                 }
                 System.out.println("Message was small enough.");
             
@@ -141,41 +176,115 @@ public class Steganography {
 
                 // else the message is too big to fit into the image
                 // so we fit as much as we can
-                // TODO: this assuming that we replace a whole byte with 0
-                int messageByte = 0;
-                int i = 7;
-
-                while (inputStream.available() - 1 > 0) {
-                    if (messageByte != 0) {
-
-                        int messageBit = messageByte >>> i;
-                        int imageByte = inputStream.read();
-
-                        if (messageBit == 1) { 
-                            // '|' so the one is always transfered
-                            writer.write(imageByte | 1);
-                            System.out.println( imageByte | 1);
-                        } else {
-                            // if 0, '&'' it with 11111110
-                            writer.write(imageByte & 0xFE);
-                            System.out.println(imageByte & 0xFE);
-                        }
-
-                        i--;
-                    } else {
-                       messageByte = messageStream.read();
-                       i = 7;
-                    }
-                    
+                if (imageNumBytes < 6) {
+                    System.out.println("Picture too small to encode a single character + a zero byte");
+                    return;
                 }
 
-                writer.write(0);
+
+                int x = 0;
+                int y = 0;
+                int newPixel = 0;
+                int imageRGBPlace = -1;
+                int newPixRGBPlace = -1;
+                int messageBitsRemaining = 8;
+                int messageByte = -1;
+                int imagePixel = 0;
+                int shiftMsgBit = -1;
+
+                // leave room for 0 byte
+                long limitOfBytes = imageNumBytes - 8;
+
+                // need to do this so that a partial byte is not written in 
+                // (a case is if we have 6 pixels, which is 18 bytes. That leaves 8 bits
+                // for a character and 8 for a zero, which leaves 2 free bits. Those 2 bits
+                // will screw everything up since it's not a full character.)
+                while (limitOfBytes % 8 != 0) {
+                    limitOfBytes--;
+                }
+
+                while (limitOfBytes > 0) {
+                    messageBitsRemaining = 8;
+                    messageByte = messageStream.read();
+
+                    while (messageBitsRemaining > 0 && limitOfBytes > 0) {
+                        
+                        if (newPixRGBPlace == -1) {
+                            if (x >= width) {
+                                x = 0;
+                                y++;
+                            }
+                            encodedImage.setRGB(x, y, newPixel);
+                            newPixel = 0xFF000000 & imagePixel; // to get only the alpha
+                            newPixRGBPlace = 2;
+                            x++;
+                        }
+
+                        if (shiftMsgBit == -1) {
+                            shiftMsgBit = 7;
+                        }
+
+                        // this should actually be the same as newPixRGBPlace
+                        // (they move together) but i'm keeping it for now for clarity
+                        if (imageRGBPlace == -1) {
+                            imagePixel = img.getRGB(x, y);
+                            imageRGBPlace = 2;
+                        }
+
+                        int currentMessageBit = messageByte >>> shiftMsgBit;
+                        int imageByte = (imagePixel >>> imageRGBPlace) & 0xFF;
+
+                        // what these do is get the image byte and change the end as necessary
+                        // then, shift the byte to it's proper position
+                        if (currentMessageBit == 1) { 
+                            // '|' so the one is always transfered
+                            newPixel = newPixel | ((imageByte | 1) << (newPixRGBPlace * 8));
+                        } else {
+                            // if 0, '&'' it with 11111110
+                            newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
+                        }
+                        messageBitsRemaining--;
+                        shiftMsgBit--;
+                        newPixRGBPlace--;
+                        imageRGBPlace--;
+                        limitOfBytes--;
+                    }
+                }
+
+                int limit;
+                if (newPixRGBPlace == 1) {
+                    newPixel = newPixel | (imagePixel & 0xFEFE);
+                    limit = 2;
+                } else {
+                    // if 0, can only write 1 zero in the current pixel.
+                    // set limit to 3 since we need 3 bytes to write 7 zeroes
+                    newPixel = newPixel | (imagePixel & 0xFE);
+                    limit = 3;
+                }
+
+                if (x >= width) {
+                    x = 0;
+                    y++;
+                }
+                encodedImage.setRGB(x, y, newPixel);
+                x++;
+
+                // since the encoded message was originally a copy of the input image,
+                //  we don't need to copy over the other pixels.
+                for (int i = 0; i < limit; i++) {
+                    if (x >= width) {
+                        x = 0;
+                        y++;
+                    }
+                    newPixel = img.getRGB(x, y) & (0xFFFEFEFE);
+                    encodedImage.setRGB(x, y, newPixel);
+                    x++;
+                }
                 System.out.println("Message is biiiig.");
 
             }
             
             messageStream.close();
-            writer.close();
 
         } else if (decode){
             File decodedMessageFile = null;
@@ -193,7 +302,6 @@ public class Steganography {
 
 
     // This prints the image height and width and a specific pixel. 
-        inputStream.close();
         System.out.println(height  + "  " +  width);
 
     }
