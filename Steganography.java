@@ -85,13 +85,16 @@ public class Steganography {
 
                 int x = 0;
                 int y = 0;
-                int newPixel = 0;
+                
                 int imageRGBPlace = 2; // was -1
                 int newPixRGBPlace = 2; // was -1
                 int messageBitsRemaining = 8;
                 int messageByte = -1;
-                int imagePixel = 0;
+                int imagePixel = img.getRGB(x, y);
+                int newPixel = 0xFF000000 & imagePixel;
                 int shiftMsgBit = -1;
+
+                x = 1;
                 while (messageStream.available() > 0) {
                     messageBitsRemaining = 8;
                     messageByte = messageStream.read();
@@ -115,16 +118,10 @@ public class Steganography {
                             shiftMsgBit = 7;
                         }
 
-                        // this should actually be the same as newPixRGBPlace
-                        // (they move together) but i'm keeping it for now for clarity
-                        // if (imageRGBPlace == -1) {
-                        //     imagePixel = img.getRGB(x, y);
-                        //     imageRGBPlace = 2;
-                        // }
-
                         int currentMessageBit = (messageByte >>> shiftMsgBit) & 1;
                         int imageByte = (imagePixel >>> (imageRGBPlace * 8)) & 0xFF;
 
+                        System.out.printf("%d ", imageByte);
                         // what these do is get the image byte and change the end as necessary
                         // then, shift the byte to it's proper position
                         if (currentMessageBit == 1) { 
@@ -134,6 +131,7 @@ public class Steganography {
                             // if 0, '&'' it with 11111110
                             newPixel = newPixel | ((imageByte & 0xFE) << (newPixRGBPlace * 8));
                         }
+                        // System.out.printf("%h ", newPixel);
                         messageBitsRemaining--;
                         shiftMsgBit--;
                         newPixRGBPlace--;
@@ -332,6 +330,7 @@ public class Steganography {
                             bitShift = 7;
                             decodedChar = 0;
                         }
+                        
                         decodedChar = decodedChar | (((imagePixel >> (i * 8)) & 1) << bitShift);
                         
                         bitShift--;
