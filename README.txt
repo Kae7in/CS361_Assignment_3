@@ -6,6 +6,11 @@ EMAIL: kaelin@cs.utexas.edu; Jeremiah.H.Martinez@utexas.edu;
 
 [Program 1]
 [Description]
+The program is in one java file. It is a bit clunky (the two cases for encoding are basically the same) but the program works well. Changing the bits was done with hex numbers for readability and to make sure that the conversion was happening correctly. Inputting the 0 byte is done seperately from the main loop since there are a few cases where a zero is not as simple as writing over three bytes. To run the program, you enter a encode/decode flag, an image file, and a message to encode/file to write to. Ex:
+Stenganography -E imageToEncode messageFile
+Stenganography -D encodedImage outputFile
+Decoding simply iterates and builds bites to output until a 0 byte is encountered.
+
 
 [Finish]
 Finished it. Works for .bmp and .png files.
