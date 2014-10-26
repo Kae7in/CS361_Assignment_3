@@ -39,11 +39,12 @@ Use the last two bits of RBG instead of just one.
 Suppose you were tasked to build an "image firewall" that would block images containing hidden messages. Could you do it? How might you approach this problem?
 
 [Answer 4]
-Maybe change all the last bits of all RGBs to 1 or 0. Maybe last two to be safe.
+Maybe change all the last bits of all RGBs to 1 or 0. Maybe last two to be safe. This would 
+destroy any messages a program like this would try to send.
 
 [Question 5]
 Does this fit our definition of a covert channel? Explain your answer.
-Yes. The pixels are being used in ways they were not intended to be used for.
-We should not be able to retrieve ascii messages from a picture.
 
 [Answer 5]
+Yes. The pixels are being used in ways they were not intended to be used for.
+We should not be able to retrieve ascii messages from a picture.
